@@ -20,22 +20,23 @@ rsyncmachine.pl [--help|--version|--growlregister|--man] configurationfile
 ###Options###
 
 --help
-: Print a brief help message.
+	Print a brief help message.
 
 --version
-: Print the version number.
+	Print the version number.
 
 --growlregister
-: Sends the growl registration packet to the growl server.
+	Sends the growl registration packet to the growl server.
 
 --man
-: Print the complete pod documentation. Note that this will
-only work, if you have the perldoc program available on your system.
+	Print the complete pod documentation. Note that this will
+	only work, if you have the perldoc program available on your
+	system.
 
 ###Arguments###
 
 configurationfile
-: Contains the settings for an instance of this program.
+	Contains the settings for an instance of this program.
 
 ##Details##
 
