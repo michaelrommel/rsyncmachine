@@ -2,7 +2,7 @@
 
 # used basic modules
 use strict;
-use version; our $VERSION = qv('0.10.4');
+use version; our $VERSION = qv('0.10.5');
 use charnames qw( :full );
 use File::Path qw(remove_tree);
 use File::Basename;
