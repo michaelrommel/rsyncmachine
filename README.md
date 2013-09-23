@@ -65,7 +65,7 @@ parameter declarations, plus one extended syntax:
 1. rsync://[user@]host.fqdn.tld[:port]/module/
 1. [user@]host.fqdn.tld::module/
 1. [user@]host.fqdn.tld:/path/to/be/backed/up/
-1. user#<nnn>@host.fqdn.tld:/path/to/be/backed/up/
+1. user#\<nnn\>@host.fqdn.tld:/path/to/be/backed/up/
 
 Variant 1) is just a regular copy on the same host.
 
