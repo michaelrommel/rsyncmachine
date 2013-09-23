@@ -1,0 +1,11 @@
+- :2eDS_Store
+- :2eTemporaryItems
+- .AppleDB
+- .AppleDesktop
+- .AppleDouble
+- /Network Trash Folder
+- /.swp
+- /Temporary Items
+- /Old Versions
+- Standard Catalog Previews.lrdata
+- Studio Catalog Previews.lrdata

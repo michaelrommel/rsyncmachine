@@ -1,0 +1,9 @@
+- :2eDS_Store
+- :2eTemporaryItems
+- .AppleDB
+- .AppleDesktop
+- .AppleDouble
+- /Network Trash Folder
+- /.swp
+- /Temporary Items
+- /incoming/bad_music
