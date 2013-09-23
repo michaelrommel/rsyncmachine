@@ -18,11 +18,12 @@ This documentation refers to rsyncmachine version 0.10.5
     rsyncmachine.pl [--help|--version|--growlregister|--man] configurationfile
 
     Options
-        --help Print a brief help message.
-        --version Print the version number.
+        --help          Print a brief help message.
+        --version       Print the version number.
         --growlregister Sends the growl registration packet to the growl server.
-        --man Print the complete pod documentation. Note that this will only work, 
-              if you have the perldoc program available on your system.
+	--man           Print the complete pod documentation. Note that
+			this will only work, if you have the perldoc
+			program available on your system.
 
     Arguments
         configurationfile
@@ -39,6 +40,23 @@ rsyncmachine.pl will per default create backups as follows:
 rsyncmachine.pl copies the files from remote servers or local
 directories to a local directory defined in the configuration file.
 Multiple source locations gan be given, even from multiple hosts. 
+
+If you have not backed up for a longer time rsyncmachine determines the
+amount of space needed and if that is not available it successively
+deletes the oldest oldest backups. The last one is preserved though and
+an error generated, if there is still not enough space.
+
+The directories for the backups, configuration and logfiles, as well as
+the values of retained backups can be changed in a configuration file,
+some values that should not normally be changed are defined in global
+variables at the beginning of this script.
+
+
+##Configuration File##
+
+The configuration file uses a JSON structure to define some globale
+parameters, as well as the source directories or modules which you
+would like to backup.
 
 The source syntax supported by this program are all standard rsync
 parameter declarations, plus one extended syntax:
@@ -87,15 +105,8 @@ Please note the trailing slashes, this means, that the contents of the
 directory given as source is copied into one subdirectory of the backup
 location with an "escaped" directory name, replacing / with _ etc.
 
-If you have not backed up for a longer time rsyncmachine determines the
-amount of space needed and if that is not available it successively
-deletes the oldest oldest backups. The last one is preserved though and
-an error generated, if there is still not enough space.
+An example configuration file can be found in the conf/ subdirectory.
 
-The directories for the backups, configuration and logfiles, as well as
-the values of retained backups can be changed in a configuration file,
-some values that should not normally be changed are defined in global
-variables at the beginning of this script.
 
 <!--
 vim:tw=72:sw=4:ai:si
