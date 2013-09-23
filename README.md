@@ -1,19 +1,27 @@
 rsyncmachine
 ============
 
-Perl script that automates backups using the hard-link feature of rsync,
-thereby keeping consumed diskspace at a minimum.
+rsyncmachine is a perl script that automates backups using rsync which
+runs as hourly cron jobs and creates snapshots of the source directories
+at that time. By hard-linking files that have not been changed to the
+previous backup files rsyncmachine keeps consumed diskspace at a minimum.
+Obviously this will work only on filesystems that support hard-links,
+like various linux filesystems. It has been used successfully on ext4.
 
-rsyncmachine.pl will create incremental backups using rsync's hard
-links mechanism via --link-dest. The default intervals for retained
-backups are similar to settings of other backup applications and can be
-changed in the configuration file.
+rsyncmachine will create incremental backups using rsync's hard
+links mechanism via --link-dest, as opposed to similar solutions which
+create a local hard-linked copy via `cp -al` first and then specify
+the `--delete` option to rsync to clean up removed files. 
 
-##Version##
+The default intervals for retained backups are similar to settings of
+other backup applications and can be changed in the configuration file.
+
+
+## Version ##
 
 This documentation refers to rsyncmachine version 0.10.5
 
-##Synopsis##
+## Synopsis ##
 
     rsyncmachine.pl [--help|--version|--growlregister|--man] configurationfile
 
@@ -21,17 +29,17 @@ This documentation refers to rsyncmachine version 0.10.5
         --help          Print a brief help message.
         --version       Print the version number.
         --growlregister Sends the growl registration packet to the growl server.
-	--man           Print the complete pod documentation. Note that
-			this will only work, if you have the perldoc
-			program available on your system.
+        --man           Print the complete pod documentation. Note that
+                        this will only work, if you have the perldoc
+                        program available on your system.
 
     Arguments
         configurationfile
 	        Contains the settings for an instance of this program.
 
-##Details##
+## Details ##
 
-rsyncmachine.pl will per default create backups as follows:
+rsyncmachine will per default create backups as follows:
 
 - hourly backups for the past 24 hours
 - daily backups for the past 30 days
@@ -52,7 +60,7 @@ some values that should not normally be changed are defined in global
 variables at the beginning of this script.
 
 
-##Configuration File##
+## Configuration File ##
 
 The configuration file uses a JSON structure to define some globale
 parameters, as well as the source directories or modules which you
@@ -95,7 +103,7 @@ provided that your name resolver is able to find the source host by that
 short name. In any case for the resulting target backup directory the 
 .fqdn.tld is stripped, to create shorter directory names. 
 
-_Attention:_ Beware of clashes, where you would like to backup from 
+*Attention:* Beware of clashes, where you would like to backup from 
 host1.domain.com and from host1.domain.org in the same instance of 
 rsyncmachine and using exactly the same module or path name to 
 backup - this would result in identical directories and probably 
