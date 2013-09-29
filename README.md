@@ -19,7 +19,7 @@ other backup applications and can be changed in the configuration file.
 
 ## Version ##
 
-This documentation refers to rsyncmachine version 0.10.5
+This documentation refers to rsyncmachine version 0.10.7
 
 ## Synopsis ##
 
@@ -114,6 +114,9 @@ directory given as source is copied into one subdirectory of the backup
 location with an "escaped" directory name, replacing / with _ etc.
 
 An example configuration file can be found in the conf/ subdirectory.
+
+For further information, you can read more about the 
+[features](./doc/features.md).
 
 
 <!--

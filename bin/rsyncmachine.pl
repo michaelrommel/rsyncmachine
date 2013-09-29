@@ -609,7 +609,7 @@ sub calculate_needed_space_for_dir {
         $logger->warn( "Remote daemon could not be contacted, "
                     .  "skipping $directory_name!" );
         croak( "Remote daemon could not be contacted, "
-            .  "skipping $directory_name!" );
+            .  "skipping $directory_name" );
     }
 
     # second argument to the function, chooses the dryrun settings without
@@ -719,13 +719,19 @@ sub source_check {
     }
     $logger->debug( "Result: $msg" );
 
-    $logger->debug( "Connecting to source $directory_name" );
-    my $success = check_source_connectivity( $source{'fqdn'}, $source{'port'} );
+    if( $source{'fqdn'} = "" ) {
+        # local source, can backup directly, return success
+        return 1;
+    } else {
+        $logger->debug( "Connecting to source $directory_name" );
+        my $success = check_source_connectivity( $source{'fqdn'}, 
+                                                 $source{'port'} );
 
-    if( $success ) {
-        $logger->info( "Remote daemon connection "
-                    .  "($source{'fqdn'}:$source{'port'}) successful" );
-    } 
+        if( $success ) {
+            $logger->info( "Remote daemon connection "
+                        .  "($source{'fqdn'}:$source{'port'}) successful" );
+        } 
+    }
 
     return $success;
 
@@ -769,7 +775,7 @@ sub do_backup_of_directory {
         $logger->warn( "Remote daemon could not be contacted, "
                     .  "skipping $directory_name!" );
         croak( "Remote daemon could not be contacted, "
-            .  "skipping $directory_name!" );
+            .  "skipping $directory_name" );
     }
 
     # this time, the dryrun argument #2 is zero, choosing the logs
@@ -796,13 +802,6 @@ sub do_backup_of_directory {
         if ($logger->is_trace()) {
             $logger->trace( "rsync returned the following:\n$output" );
         }
-
-        #not needed anymore, FIXME
-        #try {
-        #    append_rsync_log( $rsync_logfile, $output );
-        #} catch {
-        #    $logger->warn( "Could not append rsync logfile: $_" );
-        #};
 
         # extract and return statistics
         # use of the /x parameter allows to break up the expression
