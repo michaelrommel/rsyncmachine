@@ -2,7 +2,7 @@
 
 # used basic modules
 use strict;
-use version; our $VERSION = qv('0.10.5');
+use version; our $VERSION = qv('0.10.6');
 use charnames qw( :full );
 use File::Path qw(remove_tree);
 use File::Basename;
@@ -120,6 +120,7 @@ my @thinning_list = ();
 # global error flag
 my $error_occurred = 0;
 my $error_description = "";
+my $one_source_succeeded = 0;
 
 #
 # setup logging and notifications
@@ -278,6 +279,8 @@ foreach $directory_name (@DIRS_TO_BACKUP) {
     };
     
     if ($success) {
+        # remember that at least one backup dir succeeded
+        $one_source_succeeded = 1;
         $logger->info( "Backed up $directory_name" );
         $logger->debug( "Statistics of $directory_name:" );
         foreach my $key ( keys(%stats_of_this_directory) ) {
@@ -307,11 +310,21 @@ if( ! $error_occurred ) {
 
 } else {
 
-    $logger->info( "Renaming partially finished directory" );
-    rename( "$inprogress_dir_name", "$this_backup_directory" . "$PARTIALEXT" );
-
-    $logger->error( "An error has occurred, 'Latest' still points to "
-                .   "the last completely successful directory!" );
+    if( $one_source_succeeded ) {
+        # at least one source backup was successful
+        $logger->info( "Renaming partially finished directory" );
+        rename( "$inprogress_dir_name", 
+                "$this_backup_directory" . "$PARTIALEXT" );
+        $logger->error( "An error has occurred, 'Latest' still points to "
+                    .   "the last completely successful directory!" );
+    } else {
+        # all backups failed, probably the source is down
+        # do not fail with error code 1 and do not keep the directory
+        $logger->info( "Removing empty directory" );
+        rmdir( "$inprogress_dir_name" );
+        $logger->error( "Empty backup, 'Latest' still points to "
+                    .   "the last completely successful directory!" );
+    }
 
 }
 
@@ -359,7 +372,7 @@ if ($error_occurred) {
 }
 
 $lockobject->unlock( "$BACKUP_LOG_PATH/$RSYNCLOCKFILE" );
-exit $error_occurred;
+exit ($one_source_succeeded ? $error_occurred : 0);
 
 
 
