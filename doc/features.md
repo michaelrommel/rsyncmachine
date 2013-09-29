@@ -133,7 +133,8 @@ can be used to create png images from the database to graph:
    they have been transferred (= if they have been modified)
  - total size of the backed up data
 
-
+This is an example image for [weekly transferred
+files](../logs/graph_transferred_files_week.png).
 
 
 

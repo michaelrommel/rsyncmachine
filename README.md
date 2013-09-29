@@ -49,8 +49,8 @@ rsyncmachine will per default create backups as follows:
 directories to a local directory defined in the configuration file.
 Multiple source locations gan be given, even from multiple hosts. 
 
-If you have not backed up for a longer time rsyncmachine determines the
-amount of space needed and if that is not available it successively
+Before actually transferring the files `rsyncmachine.pl` determines the
+amount of space needed and -- if that is not available -- it successively
 deletes the oldest oldest backups. The last one is preserved though and
 an error generated, if there is still not enough space.
 
@@ -151,7 +151,7 @@ Please note the trailing slashes, this means, that the contents of the
 directory given as source is copied into one subdirectory of the backup
 location with an "escaped" directory name, replacing / with _ etc.
 
-An example configuration file can be found in the conf/ subdirectory.
+An [example configuration file](./conf/rsyncmachine.conf) can be found in the [conf/](./conf/) subdirectory.
 
 For further information, you can read more about the 
 [features](./doc/features.md).
