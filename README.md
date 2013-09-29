@@ -1,14 +1,14 @@
-rsyncmachine
-============
+rsyncmachine.pl
+===============
 
-rsyncmachine is a perl script that automates backups using rsync which
+`rsyncmachine.pl` is a perl script that automates backups using rsync which
 runs as hourly cron jobs and creates snapshots of the source directories
 at that time. By hard-linking files that have not been changed to the
-previous backup files rsyncmachine keeps consumed diskspace at a minimum.
+previous backup files `rsyncmachine.pl` keeps consumed diskspace at a minimum.
 Obviously this will work only on filesystems that support hard-links,
 like various linux filesystems. It has been used successfully on ext4.
 
-rsyncmachine will create incremental backups using rsync's hard
+`rsyncmachine.pl` will create incremental backups using rsync's hard
 links mechanism via --link-dest, as opposed to similar solutions which
 create a local hard-linked copy via `cp -al` first and then specify
 the `--delete` option to rsync to clean up removed files. 
@@ -19,7 +19,7 @@ other backup applications and can be changed in the configuration file.
 
 ## Version ##
 
-This documentation refers to rsyncmachine version 0.10.7
+This documentation refers to `rsyncmachine.pl` version 0.10.7
 
 ## Synopsis ##
 
@@ -39,7 +39,7 @@ This documentation refers to rsyncmachine version 0.10.7
 
 ## Details ##
 
-rsyncmachine will per default create backups as follows:
+`rsyncmachine.pl` will per default create backups as follows:
 
 - hourly backups for the past 24 hours
 - daily backups for the past 30 days
@@ -141,9 +141,9 @@ provided that your name resolver is able to find the source host by that
 short name. In any case for the resulting target backup directory the 
 .fqdn.tld is stripped, to create shorter directory names. 
 
-*Attention:* Beware of clashes, where you would like to backup from 
+**Attention:** Beware of clashes, where you would like to backup from 
 host1.domain.com and from host1.domain.org in the same instance of 
-rsyncmachine and using exactly the same module or path name to 
+`rsyncmachine.pl` and using exactly the same module or path name to 
 backup - this would result in identical directories and probably 
 clobber your backup.
 
