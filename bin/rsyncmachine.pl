@@ -708,6 +708,7 @@ sub source_check {
     my ($directory_name) = @_;
 
     my $msg;
+    my $success;
 
     my $logger = get_logger( "source_check" );
 
@@ -721,11 +722,11 @@ sub source_check {
 
     if( $source{'fqdn'} eq "" ) {
         # local source, can backup directly, return success
-        return 1;
+        $success = 1;
     } else {
         $logger->debug( "Connecting to source $directory_name" );
-        my $success = check_source_connectivity( $source{'fqdn'}, 
-                                                 $source{'port'} );
+        $success = check_source_connectivity( $source{'fqdn'}, 
+                                              $source{'port'} );
 
         if( $success ) {
             $logger->info( "Remote daemon connection "
