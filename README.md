@@ -45,7 +45,7 @@ rsyncmachine will per default create backups as follows:
 - daily backups for the past 30 days
 - weekly backups for all previous months until the disk is full
 
-rsyncmachine.pl copies the files from remote servers or local
+`rsyncmachine.pl` copies the files from remote servers or local
 directories to a local directory defined in the configuration file.
 Multiple source locations gan be given, even from multiple hosts. 
 
@@ -58,6 +58,44 @@ The directories for the backups, configuration and logfiles, as well as
 the values of retained backups can be changed in a configuration file,
 some values that should not normally be changed are defined in global
 variables at the beginning of this script.
+
+
+## Dependencies ##
+
+`rsyncmachine.pl` makes extensive use of existing modules from CPAN.
+Here is the list of the used modules that should be either in the
+default perl installation on a standard ubuntu, if you install the main
+perl interpreter or that are packaged separately:
+
+    File::Path
+    File::Basename
+    Carp
+    Getopt::Long
+    Pod::Usage
+    Switch
+    English
+    Filesys::DiskSpace
+    DateTime
+    Log::Log4perl
+    Readonly
+    RRDs
+    Try::Tiny
+    LockFile::Simple
+    IO::Socket::INET
+    Config::JSON
+
+Typically those modules a prepackaged, to install them e.g. for ubuntu:
+
+    apt-get install libswitch-perl
+    apt-get install libfilesys-diskspace-perl
+    apt-get install libdatetime-perl
+    apt-get install liblog-log4perl-perl
+    apt-get install libreadonly-perl
+    apt-get install librrdtool-oo-perl
+    apt-get install libtry-tiny-perl
+    apt-get install liblockfile-simple-perl
+    apt-get install libio-socket-ip-perl
+    apt-get install libconfig-json-perl
 
 
 ## Configuration File ##

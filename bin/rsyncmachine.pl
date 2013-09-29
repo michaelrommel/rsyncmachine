@@ -719,7 +719,7 @@ sub source_check {
     }
     $logger->debug( "Result: $msg" );
 
-    if( $source{'fqdn'} = "" ) {
+    if( $source{'fqdn'} eq "" ) {
         # local source, can backup directly, return success
         return 1;
     } else {
