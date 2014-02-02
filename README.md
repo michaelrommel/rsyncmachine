@@ -19,7 +19,7 @@ other backup applications and can be changed in the configuration file.
 
 ## Version ##
 
-This documentation refers to `rsyncmachine.pl` version 0.10.7
+This documentation refers to `rsyncmachine.pl` version 0.11.0
 
 ## Synopsis ##
 

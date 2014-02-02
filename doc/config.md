@@ -114,10 +114,10 @@ Please note the trailing slashes, this means, that the contents of the
 directory given as source is copied into one subdirectory of the backup
 location with an "escaped" directory name, replacing / with _ etc.
 
-An [example configuration file](./conf/rsyncmachine.conf) can be found in the [conf/](./conf/) subdirectory.
+An [example configuration file](../conf/rsyncmachine.conf) can be found in the [conf/](../conf/) subdirectory.
 
 For further information, you can read more about the 
-[features](./doc/features.md).
+[features](./features.md).
 
 
 <!--
