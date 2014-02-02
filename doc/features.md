@@ -1,4 +1,3 @@
-
 Short overview on features
 ==========================
 
@@ -85,7 +84,7 @@ to keep 24 hours of hourly backups and daily backups for the last 30
 days, at the end of each backup run the directories that are no longer
 needed are deleted to conserve disk space.
 
-During the backup, the directory's name ends with ".inProgress" to
+During the backup, the directory´s name ends with ".inProgress" to
 distinguish between already completed backups and backups currently in
 work.
 
@@ -100,7 +99,14 @@ remedy the situation yourself then.
 If a backup specifies only directories from one host and this host could
 not be reached, then `rsyncmachine.pl` assumes that this host is shut down
 normally and exits with a success error code to avoid unneccessary
-mails for normal desktops.
+mails for normal desktop machines. `rsyncmachine.pl` tries to determine
+the network connectivity before actually backing up the machine and can
+report connectivity issues e.g. in the growl notification. When you are
+using normal targets via ssh or rsync daemons, `rsyncmachine.pl` tries
+to do a quick TCP connection to the target to see if it's alive. If you
+specified one of the special connection methods in your config file,
+the connectivity test is using rsync and your actual parameters, so this
+is slower.
 
 
 ## Notifications and reports ##
@@ -139,5 +145,5 @@ files](../logs/graph_transferred_files_week.png).
 
 
 <!--
-vim:tw=72:si:ai:tabstop=4:sw=4
+vim:tw=72:si:ai:tabstop=4:sw=4:filetype=markdown
 -->

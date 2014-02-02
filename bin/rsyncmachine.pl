@@ -2,7 +2,7 @@
 
 # used basic modules
 use strict;
-use version; our $VERSION = qv('0.10.7');
+use version; our $VERSION = qv('0.11.0');
 use charnames qw( :full );
 use File::Path qw(remove_tree);
 use File::Basename;
@@ -71,7 +71,7 @@ Readonly my $HOURS_TO_KEEP      => $config->get("HOURS_TO_KEEP");
 Readonly my $TIMEZONE           => $config->get("TIMEZONE");
 
 # directories to backup in absolute notation, all with trailing / !!!
-Readonly my @DIRS_TO_BACKUP     => @{$config->get("DIRS_TO_BACKUP")};
+Readonly my @SOURCE_DEFS        => @{$config->get("SOURCE_DEFINITIONS")};
 
 Readonly my $PROGRESSEXT        => ".inProgress";
 Readonly my $PARTIALEXT         => ".partial";
@@ -84,7 +84,7 @@ my $latest;
 my $this_backup_directory;
 # temporary directory name, while backup is in progress
 my $inprogress_dir_name;
-my $directory_name;
+my $source_definition;
 
 # global rsync options (original options tried: -avxHSAX)
 #Readonly my $GLOBAL_RSYNC_OPTIONS => "--stats --numeric-ids -avxHS";
@@ -93,7 +93,7 @@ Readonly my $GLOBAL_RSYNC_OPTIONS =>
     "--stats --numeric-ids -axHS";
 
 # per directory rsync arguments
-my $rsync_arguments_for_dir;
+my $rsync_arguments_for_source;
 my $rsync_logfile;
 
 # miscellaneous options for debugging purposes
@@ -264,13 +264,15 @@ $statistics{"oldest_backup_age"} =
     int(($epoch_of_backup_start-$epoch_of_oldest_backup)/(3600*24));
 
 # enough space on the backup device to continue
-foreach $directory_name (@DIRS_TO_BACKUP) {
+foreach $source_definition (@SOURCE_DEFS) {
 
     my %stats_of_this_directory = ();
 
+    my %source = parse_source( $source_definition );
+
     my $success = try {
         %stats_of_this_directory = 
-              do_backup_of_directory( $directory_name );
+              do_backup_of_directory( $source_definition );
     } catch {
         $logger->error( "Error backing up, " . $_ );
         $error_occurred = 1;
@@ -281,8 +283,8 @@ foreach $directory_name (@DIRS_TO_BACKUP) {
     if ($success) {
         # remember that at least one backup dir succeeded
         $one_source_succeeded = 1;
-        $logger->info( "Backed up $directory_name" );
-        $logger->debug( "Statistics of $directory_name:" );
+        $logger->info( "Backed up $source{'directory_name'}" );
+        $logger->debug( "Statistics of $source{'directory_name'}:" );
         foreach my $key ( keys(%stats_of_this_directory) ) {
             $statistics{$key} += $stats_of_this_directory{$key};
             $logger->debug( "$key: $stats_of_this_directory{$key}" );
@@ -483,21 +485,17 @@ sub init {
 }
 
 
-sub set_rsync_arguments_for_dir {
+sub set_rsync_arguments_for_source {
 
-	my ($directory_name, $dryrun) = @_;
+	my ($source_definition, $dryrun) = @_;
 
-	my $logfile_option	= q{};
-	my $exclude_option	= q{};
-	my $linkdest_option	= q{};
-	my $ssh_option  	= q{};
+	my $logfile_option  	= q{};
+	my $exclude_option  	= q{};
+	my $linkdest_option 	= q{};
 
-	if ($directory_name =~ m{[^/]"}) {
-        my $logger = get_logger("set_options");
-        $logger->warn( "No trailing slash on directory $directory_name!" );
-    }
+    my $logger = get_logger("set_options");
 
-    my %source = parse_source( $directory_name );
+    my %source = parse_source( $source_definition );
 
     # create escaped data directory name
     # start with the path
@@ -526,25 +524,21 @@ sub set_rsync_arguments_for_dir {
 		$linkdest_option = "--link-dest=$linkdest_path";
 	}
 
-    # if we have used the non-standard notation of a non-standard ssh port
-    # now we have to mangle the original directory name from the config file
-    if( $source{'nonstdsshport'} eq "yes" ) {
-        $logger->info( "Using ssh on non-standard port: $source{'port'}" );
-        $directory_name =~ s{#[0-9]+@}{@};
-        $ssh_option = "-e \"ssh -p$source{'port'}\"";
-    }
-
 	$rsync_logfile = "$BACKUP_LOG_PATH"
                      . "/backup_$escaped_dir_name.log";
     if( ! $dryrun ) {
         $logfile_option = "--log-file=$rsync_logfile";
     }
 
+    if( defined($source{'password'}) ) {
+        $ENV{RSYNC_PASSWORD} = $source{'password'};
+    }
+
     # note trailing spaces to separate the arguments
-	$rsync_arguments_for_dir
+	$rsync_arguments_for_source
         = "$GLOBAL_RSYNC_OPTIONS "
-        . "$ssh_option $logfile_option $exclude_option $linkdest_option "
-        . "$directory_name "
+        . "$source{'connection'} $logfile_option $exclude_option $linkdest_option "
+        . "$source{'directory_name'} "
         . "$BACKUP_ROOT/$inprogress_dir_name/$escaped_dir_name/"
         ;
 
@@ -580,10 +574,10 @@ sub calculate_required_space {
     my $running_sum = 0;
     my $bytes = 0;
 
-    foreach my $dirtobackup (@DIRS_TO_BACKUP) {
+    foreach my $source_definition (@SOURCE_DEFS) {
         
         try { 
-            $bytes = calculate_needed_space_for_dir( $dirtobackup );
+            $bytes = calculate_needed_space_for_source( $source_definition );
         } catch {
             $bytes = 0;
         };
@@ -597,25 +591,27 @@ sub calculate_required_space {
 }
 
 
-sub calculate_needed_space_for_dir {
+sub calculate_needed_space_for_source {
 
-	my ($directory_name) = @_;
+	my ($source_definition) = @_;
 
     my $logger = get_logger( "rsync_dry" );
 
-    if( ! source_check( $directory_name ) ) {
+    my %source = parse_source( $source_definition );
+
+    if( ! source_check( $source_definition ) ) {
         # set global error flag to prevent pre-thinning 
         $error_occurred = 1;
         $logger->warn( "Remote daemon could not be contacted, "
-                    .  "skipping $directory_name!" );
+                    .  "skipping $source{'directory_name'}!" );
         croak( "Remote daemon could not be contacted, "
-            .  "skipping $directory_name" );
+            .  "skipping $source{'directory_name'}" );
     }
 
     # second argument to the function, chooses the dryrun settings without
     # the logfile of rsync
-	set_rsync_arguments_for_dir( $directory_name, 1 );
-	my $cmd = "/usr/bin/rsync 2>&1 --dry-run $rsync_arguments_for_dir";
+	set_rsync_arguments_for_source( $source_definition, 1 );
+	my $cmd = "/usr/bin/rsync 2>&1 --dry-run $rsync_arguments_for_source";
 
 	$logger->debug( "Executing: $cmd" );
 	my $output = qx{$cmd};
@@ -636,12 +632,12 @@ sub calculate_needed_space_for_dir {
 
         if( ! defined($bytes) ) {
             $logger->warn(
-                "Could not determine needed space for: $directory_name"
+                "Could not determine needed space for: $source{'directory_name'}"
                 );
             croak( "Could not parse output of dry-run!" );
         }
 
-        $logger->info( "$directory_name needs $bytes for backup" );
+        $logger->info( "$source{'directory_name'} needs $bytes for backup" );
         return $bytes;
     }
 
@@ -650,16 +646,36 @@ sub calculate_needed_space_for_dir {
 
 sub parse_source {
 
-    my ($directory_name) = @_;
+    my ($source_definition) = @_;
 
     my %source = ();
 
-    switch( $directory_name ) {
+    $source{'connection'} = ( defined($source_definition->{"connection"}) ? 
+        $source_definition->{"connection"} : "" );
+
+    $source{'password'} = ( defined($source_definition->{"password"}) ? 
+        $source_definition->{"password"} : "" );
+
+    $source{'directory_name'} = ( defined($source_definition->{"dir"}) ? 
+        $source_definition->{"dir"} : "" );
+
+    my $dirname = $source{'directory_name'};
+
+    if( $dirname eq "" ) {
+        $logger->error( "malformed config file, source definition missing dir name" );
+        croak ( "config file error" );
+    }
+
+	if( $dirname =~ m{[^/]"} ) {
+        $logger->warn( "No trailing slash on directory $dirname!" );
+    }
+
+    switch( $dirname ) {
         case m{rsync://} {
                 # here it is allowed to specify a portnumber, too
                 ( $source{'user'}, $source{'fqdn'},
                   $source{'port'}, $source{'path'} ) =
-                    $directory_name =~
+                    $dirname =~
                     m{rsync://(?:([^@]*)@)?([^/:]+)(?::([0-9]+))?/(.*)};
                 $source{'port'} = (defined($source{'port'}) ?
                     $source{'port'} : 873);
@@ -668,29 +684,21 @@ sub parse_source {
                 # set the default portnumber
                 $source{'port'} = 873; 
                 ( $source{'user'}, $source{'fqdn'}, $source{'path'} ) = 
-                    $directory_name =~ m{(?:([^@]*)@)?([^/]+)::(.*)};
+                    $dirname =~ m{(?:([^@]*)@)?([^/]+)::(.*)};
             }
         case m{:} {
                 $source{'port'} = 22; 
                 ( $source{'user'}, $source{'fqdn'}, $source{'path'} ) = 
-                    $directory_name =~ m{(?:([^@]*)@)?([^/]+):(.*)};
-                # non-default specification of a portnumber for the ssh daemon
-                # note, that this probibits usernames with a # followed by digits
-                if( $source{'user'} =~ m{#[0-9]+} ) {
-                    # there is a ssh portnumber encoded in the path
-                    ($source{'user'}, $source{'port'}) =
-                        $source{'user'} =~ m{([^#]*)#(.*)$};
-                    # set a flag indicating the non-standard port
-                    $source{'nonstdsshport'} = "yes";
-                }
+                    $dirname =~ m{(?:([^@]*)@)?([^/]+):(.*)};
             }
         else { 
-                $source{'path'} = $directory_name;
+                $source{'path'} = $dirname;
             }
     }
 
     # make sure, each item is defined, even to an empty string
-    foreach my $item ( 'user', 'fqdn', 'port', 'path', 'nonstdsshport' ) {
+    foreach my $item ( 'directory_name', 'connection', 'password', 'user',
+                       'fqdn', 'port', 'path' ) {
         $source{$item} = (defined($source{$item}) ? $source{$item} : "");
     }
 
@@ -705,17 +713,18 @@ sub parse_source {
 
 sub source_check {
 
-    my ($directory_name) = @_;
+    my ($source_definition) = @_;
 
     my $msg;
     my $success;
 
     my $logger = get_logger( "source_check" );
 
-    $logger->debug( "Parsing source $directory_name" );
-    my %source = parse_source( $directory_name );
+    $logger->debug( "Parsing source" );
+    my %source = parse_source( $source_definition );
 
-    foreach my $item ( 'user', 'fqdn', 'host', 'port', 'path' ) {
+    foreach my $item ( 'directory_name', 'connection', 'password',
+                       'user', 'fqdn', 'host', 'port', 'path' ) {
         $msg .= "$item=[$source{$item}] ";
     }
     $logger->debug( "Result: $msg" );
@@ -724,13 +733,12 @@ sub source_check {
         # local source, can backup directly, return success
         $success = 1;
     } else {
-        $logger->debug( "Connecting to source $directory_name" );
-        $success = check_source_connectivity( $source{'fqdn'}, 
-                                              $source{'port'} );
+        $logger->debug( "Checking source connectivity to $source{'directory_name'}" );
+        $success = check_source_connectivity( %source );
 
         if( $success ) {
             $logger->info( "Remote daemon connection "
-                        .  "($source{'fqdn'}:$source{'port'}) successful" );
+                        .  "($source{'directory_name'}) successful" );
         } 
     }
 
@@ -741,18 +749,57 @@ sub source_check {
 
 sub check_source_connectivity {
 
-	my ($fqdn, $port ) = @_;
+    my ( %source ) = @_;
+    my $cmd;
 
-    my $socket = IO::Socket::INET->new(
-            PeerAddr => $fqdn, 
-            PeerPort => $port, 
-            Proto => 'tcp' );
+    my $logger = get_logger( "source_check" );
 
-    if( $socket ) {
-        shutdown($socket, 2);
-        return 1; 
-    } else { 
-        return 0; 
+    if( $source{'connection'} ne "" ) {
+        # we got a special connection method, hence we need to use the real rsync
+        # to check the connectivity. We use a dummy target to just list
+        # the module names, or the default directory which is much quicker...
+
+        if( $source{'directory_name'} =~ m{(^rsync://|.*::).*} ) {
+            # in case it's an rsync daemon on the other side, use module list
+            $cmd = "/usr/bin/rsync 2>&1 --dry-run $source{'connection'} $source{'fqdn'}::";
+        } else {
+            # otherwise it's a ssh variant, so if the user can get a file list
+            # from the default directory (his home dir), access to the other path
+            # is subject to his permissions and not a network issue, for which we
+            # test here
+            $cmd = "/usr/bin/rsync 2>&1 --dry-run $source{'connection'} $source{'fqdn'}:";
+        }
+
+        $logger->debug( "Executing: $cmd" );
+        my $output = qx{$cmd};
+
+        # $? & 127 would give us the signal, which the process died from
+        if ( ($? >> 8) != 0 ) {
+            $error_description .= ($error_description ne "" ? ", " : "" ) .
+                "connection test failed";
+            $logger->warn( "connection test failed: " .
+                    get_rsync_err_explanation( $? >> 8 ) );
+            return 0;
+        } else {
+            $logger->debug( "Connection test returned status $?" );
+            return 1;
+        }
+    } else {
+
+        $logger->debug( "Testing TCP conn to $source{'fqdn'}:$source{'port'}" );
+        # try a direct tcp connection to the remote daemon
+        my $socket = IO::Socket::INET->new(
+                PeerAddr => $source{'fqdn'}, 
+                PeerPort => $source{'port'}, 
+                Proto => 'tcp' );
+
+        if( $socket ) {
+            shutdown($socket, 2);
+            return 1; 
+        } else { 
+            return 0; 
+        }
+
     }
 
 }
@@ -760,30 +807,32 @@ sub check_source_connectivity {
 
 sub do_backup_of_directory {
 
-    my ($directory_name) = @_;
+    my ($source_definition) = @_;
 
     my %stats_of_this_dir = ();
 
-    my $logger = get_logger( "rsync" );
-	$logger->debug( "Backing up $directory_name" );
+    my %source = parse_source( $source_definition );
 
-    if( ! source_check( $directory_name ) ) {
+    my $logger = get_logger( "rsync" );
+	$logger->debug( "Backing up $source{'directory_name'}" );
+
+    if( ! source_check( $source_definition ) ) {
         # set global error flag to prevent thinning and deleting of
         # directories since that may cause older directories to vanish
         $error_occurred = 1;
         $error_description .= ($error_description ne "" ? ", " : "" ) .
             "no daemon";
         $logger->warn( "Remote daemon could not be contacted, "
-                    .  "skipping $directory_name!" );
+                    .  "skipping $source{'directory_name'}!" );
         croak( "Remote daemon could not be contacted, "
-            .  "skipping $directory_name" );
+            .  "skipping $source{'directory_name'}" );
     }
 
     # this time, the dryrun argument #2 is zero, choosing the logs
-	set_rsync_arguments_for_dir( $directory_name, 0 );
+	set_rsync_arguments_for_source( $source_definition, 0 );
 
     # capture standard error together with stdout
-	my $cmd = "/usr/bin/rsync 2>&1 $rsync_arguments_for_dir ";
+	my $cmd = "/usr/bin/rsync 2>&1 $rsync_arguments_for_source ";
 
 	$logger->debug( "Executing: $cmd" );
 	my $output = qx{$cmd};
