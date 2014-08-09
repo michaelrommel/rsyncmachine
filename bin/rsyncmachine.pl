@@ -2,7 +2,7 @@
 
 # used basic modules
 use strict;
-use version; our $VERSION = qv('0.11.0');
+use version; our $VERSION = qv('0.11.1');
 use charnames qw( :full );
 use File::Path qw(remove_tree);
 use File::Basename;
@@ -13,6 +13,7 @@ use Switch;
 use English qw( -no_match_vars );
 
 # used further modules, install via apt-get
+# apt-get install libswitch-perl
 # apt-get install libfilesys-diskspace-perl
 # apt-get install libdatetime-perl
 # apt-get install liblog-log4perl-perl
